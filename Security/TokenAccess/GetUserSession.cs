@@ -12,15 +12,8 @@ namespace Security.TokenAccess
         }
         string IGetUserSession.GetUserId()
         {
-            try
-            {
                 string? userId = _contextAccessor.HttpContext?.User.Claims.FirstOrDefault(a => a.Type.Equals(ClaimTypes.Sid))?.Value;
                 return userId;
-            }
-            catch (Exception ex)
-            {
-                return "";
-            }
         }
     }
 }

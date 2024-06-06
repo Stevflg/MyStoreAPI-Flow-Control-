@@ -1,15 +1,10 @@
 ﻿using Application.Contracts.SecurityApp;
-using Domain.Entities;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Application.DTO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Security.TokenAccess
 {
@@ -20,7 +15,7 @@ namespace Security.TokenAccess
         {
             _configuration = configuration;
         }
-        string IGenerateToken.Create(User userLogin, List<Role> roles)
+        string IGenerateToken.Create(UserDTO userLogin)
         {
             var Claims = new List<Claim>();
 
@@ -35,7 +30,7 @@ namespace Security.TokenAccess
             Claims.Add(new Claim(
                     ClaimTypes.Email, userLogin.Email
                 ));
-            foreach (var rol in roles)
+            foreach (var rol in userLogin.Roles)
             {
                 Claims.Add(
                     new Claim(ClaimTypes.Role, rol.Name)
@@ -44,6 +39,7 @@ namespace Security.TokenAccess
 
             var credentials = new SigningCredentials( new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Key"].ToString()))
                                                 ,SecurityAlgorithms.EcdsaSha256);
+
             var tokenDescriptions = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(Claims),

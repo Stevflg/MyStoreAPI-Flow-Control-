@@ -17,6 +17,13 @@ namespace Application.DTO.Mapper_Profile
            //Empployee
            CreateMap<Employee, EmployeeDTO>();
 
+            //Users
+            CreateMap<User, UserDTO>()
+                 .ForMember(a => a.Image, b => b.MapFrom(c => c.Employee.Image))
+                 .ForMember(a => a.CompleteName, b => b.MapFrom(c => c.Employee.Name + " " + c.Employee.LastName))
+                 .ForMember(a => a.Roles, b => b.MapFrom(c => c.Userrols.Select(a => a.Rol)));
+                
+           CreateMap<Role, RolDTO>();
            //Invoice
           //CreateMap<Invoice, InvoiceDTO>();
         }

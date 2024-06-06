@@ -22,6 +22,7 @@ namespace Infraestructure.EntityConfig
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("datetime");
+            entity.Property(e => e.Image).HasMaxLength(100);
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.LastName).HasMaxLength(40);
             entity.Property(e => e.Name).HasMaxLength(40);

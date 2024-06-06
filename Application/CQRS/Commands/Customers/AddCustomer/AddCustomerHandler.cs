@@ -1,3 +1,4 @@
+using Application.Common.Errors;
 using Application.DTO;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
@@ -9,7 +10,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.CQRS.Commands.Customers.AddCustomer
 {
-    internal class AddCustomerHandler : IRequestHandler<AddCustomerCommand, Result<List<CustomerDTO>>>
+    internal class AddCustomerHandler : IRequestHandler<AddCustomerCommand,/*El retorno se hace mendiente
+                                                                            el Result*/ Result<List<CustomerDTO>>>
     {
         private readonly MyStoreAppContext _context;
         private readonly IMapper _mapper;
@@ -26,7 +28,8 @@ namespace Application.CQRS.Commands.Customers.AddCustomer
                 var Customer =await _context.Customers.FirstOrDefaultAsync(a => a.Email.Equals(request.Email));
                 if(Customer!=null)
                 {
-                    return null;
+                    //La captura de errores mediante el metodo Fail de la libreria
+                    return Result.Fail<List<CustomerDTO>>(new[] { new DuplicateCustomerError() });
                 }
 
                 var newCustomer = new Customer
@@ -43,8 +46,7 @@ namespace Application.CQRS.Commands.Customers.AddCustomer
 
                 _context.Customers.Add(newCustomer);
                 var result = await _context.SaveChangesAsync();
-
-               
+                               
                 transaction.Commit();
                 var data = await _context.Customers.AsNoTracking()
                                         .ProjectTo<CustomerDTO>(_mapper.ConfigurationProvider).ToListAsync();

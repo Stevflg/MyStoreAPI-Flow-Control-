@@ -1,11 +1,7 @@
 using Application.Common.Errors;
 using Application.CQRS.Commands.Customers.AddCustomer;
-using Application.DTO;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using OneOf;
-using OneOf.Types;
+using System.Security.Authentication.ExtendedProtection;
 
 namespace MyStoreAPI.Controllers
 {
@@ -13,11 +9,23 @@ namespace MyStoreAPI.Controllers
     {
         [HttpPost("AddCustomer")]
         public async Task<IActionResult> AddCustomer(AddCustomerCommand request){
-
+            //Enfoque utilizado para implementar OneOf
             // OneOf<List<CustomerDTO>, IError> result =  await Mediator.Send(request);
             //return result.Match(customerResult => Ok(customerResult),
             //                    error => Problem(statusCode: (int)error.StatusCode,title: error.Message));
-            return Ok();
+
+            //Enfoque para implementar FluentResult (Resultados Fluidos)
+            var result = await Mediator.Send(request);
+            if (result.IsSuccess)
+            { return Ok(result.Value); }
+
+            var firstError = result.Errors[0];
+            if (firstError is DuplicateCustomerError)
+            {
+                return Problem(statusCode: StatusCodes.Status409Conflict, detail: "Customer Already Exist");
+            }
+
+            return Problem();
         }
     }
 }
