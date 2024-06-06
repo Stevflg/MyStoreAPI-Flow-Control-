@@ -1,17 +1,16 @@
-using Application.Common.Errors;
 using Application.DTO;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Domain.Commons.Errors;
 using Domain.Entities;
-using FluentResults;
+using ErrorOr;
 using Infraestructure.context;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.CQRS.Commands.Customers.AddCustomer
 {
-    internal class AddCustomerHandler : IRequestHandler<AddCustomerCommand,/*El retorno se hace mendiente
-                                                                            el Result*/ Result<List<CustomerDTO>>>
+    internal class AddCustomerHandler : IRequestHandler<AddCustomerCommand,ErrorOr<List<CustomerDTO>>>
     {
         private readonly MyStoreAppContext _context;
         private readonly IMapper _mapper;
@@ -21,15 +20,15 @@ namespace Application.CQRS.Commands.Customers.AddCustomer
             _mapper = mapper;
         }
 
-        async Task<Result<List<CustomerDTO>>> IRequestHandler<AddCustomerCommand, Result<List<CustomerDTO>>>.Handle(AddCustomerCommand request, CancellationToken cancellationToken)
+        async Task<ErrorOr<List<CustomerDTO>>> IRequestHandler<AddCustomerCommand, ErrorOr<List<CustomerDTO>>>
+            .Handle(AddCustomerCommand request, CancellationToken cancellationToken)
         {
             using (var transaction = _context.Database.BeginTransaction())
             {
                 var Customer =await _context.Customers.FirstOrDefaultAsync(a => a.Email.Equals(request.Email));
                 if(Customer!=null)
                 {
-                    //La captura de errores mediante el metodo Fail de la libreria
-                    return Result.Fail<List<CustomerDTO>>(new[] { new DuplicateCustomerError() });
+                    return Errors.Customer.DuplicateCustomer;
                 }
 
                 var newCustomer = new Customer

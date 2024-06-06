@@ -15,7 +15,6 @@ namespace MyStoreAPI.Commons.Errors
                 Type = "https://tools.ietf.org/html/rfc7231#section-6.6.1",
                 Title = "An error occurred while processing your request",
                 Status = (int)HttpStatusCode.InternalServerError,
-
             };
 
             context.Result = new ObjectResult(

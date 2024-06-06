@@ -1,16 +1,12 @@
 ﻿using Application.Contracts.SecurityApp;
 using Application.Contracts.TokenDTO;
-using Domain.Entities;
+using Application.DTO;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Identity.PasswordHasher;
 using Infraestructure.context;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Services.Authentications.Security.Login
 {
@@ -19,12 +15,15 @@ namespace Application.Services.Authentications.Security.Login
         private readonly MyStoreAppContext _context;
         private readonly IGenerateToken _generateToken;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IMapper _mapper;
 
-        public LoginAppHandler(MyStoreAppContext context, IGenerateToken generateToken, IPasswordHasher passwordHasher)
+        public LoginAppHandler(MyStoreAppContext context, IGenerateToken generateToken,
+                                IPasswordHasher passwordHasher,IMapper mapper)
         {
             _context = context;
             _generateToken = generateToken;
             _passwordHasher = passwordHasher;
+            _mapper = mapper;
         }
         async Task<MyTokenAppDTO> IRequestHandler<LoginAppQuery, MyTokenAppDTO>.Handle(LoginAppQuery request, CancellationToken cancellationToken)
         {
@@ -33,6 +32,7 @@ namespace Application.Services.Authentications.Security.Login
                 try
                 {
                     var getUser = await _context.Users.FirstOrDefaultAsync(a => a.Name.Equals(request.UserName));
+
                     if (getUser == null)
                         throw new Exception("El usuario Ingresado es Incorrecto");
                     if (getUser.Locked > DateTime.Now || getUser.State.Equals(false))
@@ -56,22 +56,19 @@ namespace Application.Services.Authentications.Security.Login
                         await _context.SaveChangesAsync();
                         await transaction.CommitAsync();
                     }
-                    var roles = await (from a in _context.Roles
-                                       join b in _context.Userrols
-                                       on a.Id equals b.RolId
-                                       where b.UserId.Equals(getUser)
-                                       select new Role
-                                       {
-                                           Id = a.Id,
-                                           Name = a.Name,
-                                       }).ToListAsync();
 
+                    var userToken = await _context.Users.AsNoTracking().
+                                       Where(a => a.Id.Equals(getUser.Id))
+                                           .ProjectTo<UserDTO>(_mapper.ConfigurationProvider).FirstOrDefaultAsync();
 
-                    var myTokenApp = new MyTokenAppDTO
+                    var myToken = new MyTokenAppDTO
                     {
-                        UserId = getUser.Id,
-                        UserName = getUser.Name,
-                        Token = _generateToken.Create(getUser, roles)
+                        UserId = userToken.Id,
+                        UserName = userToken.Name,
+                        CompleteName = userToken.CompleteName,
+                        Token = _generateToken.Create(userToken),
+                        Image = userToken.Image,
+                        Roles = userToken.Roles
                     };
 
                     return new MyTokenAppDTO();

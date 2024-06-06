@@ -1,5 +1,5 @@
-﻿using Application.Services.Email;
-using FluentValidation.Validators;
+﻿using FluentValidation.Validators;
+using Infraestructure.Email;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;

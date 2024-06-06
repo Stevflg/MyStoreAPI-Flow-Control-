@@ -4,13 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Application.Common.Errors;
 using Application.DTO;
+using ErrorOr;
 using FluentResults;
 using MediatR;
 
 namespace Application.CQRS.Commands.Customers.AddCustomer
 {
    // public class AddCustomerCommand : IRequest<OneOf<List<CustomerDTO>,IError>>
-   public class AddCustomerCommand : IRequest<Result<List<CustomerDTO>>>
+   public class AddCustomerCommand : IRequest<ErrorOr<List<CustomerDTO>>>
     {
         public string Name { get; set; }
 
