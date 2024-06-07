@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ErrorOr;
 using FluentValidation;
+using FluentValidation.Results;
 using MediatR;
 
 namespace Application.AppBehavior
@@ -10,25 +12,28 @@ namespace Application.AppBehavior
     public class MyValidationBehaviorApp<TRequest, TResponse> :
          IPipelineBehavior<TRequest, TResponse>
              where TRequest : IRequest<TResponse>
+             where TResponse : IErrorOr
     {
-        private readonly IEnumerable<IValidator<TRequest>> _validators;
-        public MyValidationBehaviorApp(IEnumerable<IValidator<TRequest>> validators){
+        private readonly IValidator<TRequest>? _validators;
+        public MyValidationBehaviorApp(IValidator<TRequest>? validators=null){
             _validators = validators;
         }
 
         async Task<TResponse> IPipelineBehavior<TRequest, TResponse>.Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
         {
-            if(_validators.Any())
+            if(_validators is null)
             {
-                var context = new ValidationContext<TRequest>(request);
-                var validationResults =await Task.WhenAll(_validators.Select(v => v.ValidateAsync(context, cancellationToken)));
-                var failures = validationResults.SelectMany(r => r.Errors).Where(f => f != null).ToList();
-
-                if(failures.Count > 0){
-                    throw new ValidationException(failures);
-                }
+                return await next();
             }
-            return await next();
-       }
+            var validationResult = await _validators.ValidateAsync(request, cancellationToken);
+            if (validationResult.IsValid)
+            {
+                return await next();
+            }
+            var errors = validationResult.Errors.
+                    ConvertAll(validationFailure =>
+                        Error.Validation(validationFailure.PropertyName,validationFailure.ErrorMessage));
+            return (dynamic)errors;
+        }
     }
 }

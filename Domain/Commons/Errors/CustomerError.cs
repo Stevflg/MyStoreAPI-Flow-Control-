@@ -7,14 +7,12 @@ using System.Threading.Tasks;
 
 namespace Domain.Commons.Errors
 {
-    public static class Errors
+    public static partial class CustomerError
     {
-        public static class Customer
-        {
             public static Error DuplicateCustomer
                     => Error.Conflict(
                             code: "Customer.DuplicateCustomer",
                             description: "Customer Already Exist");
-        }
+
     }
 }

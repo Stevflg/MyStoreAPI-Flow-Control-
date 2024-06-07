@@ -28,7 +28,7 @@ namespace Application.CQRS.Commands.Customers.AddCustomer
                 var Customer =await _context.Customers.FirstOrDefaultAsync(a => a.Email.Equals(request.Email));
                 if(Customer!=null)
                 {
-                    return Errors.Customer.DuplicateCustomer;
+                    return CustomerError.DuplicateCustomer;
                 }
 
                 var newCustomer = new Customer

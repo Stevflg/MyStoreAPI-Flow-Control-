@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Application.Common.Errors;
 using Application.DTO;
 using ErrorOr;
-using FluentResults;
 using MediatR;
 
 namespace Application.CQRS.Commands.Customers.AddCustomer

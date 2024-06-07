@@ -3,6 +3,8 @@ using Application.Contracts.TokenDTO;
 using Application.DTO;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Domain.Commons.Errors;
+using ErrorOr;
 using Identity.PasswordHasher;
 using Infraestructure.context;
 using MediatR;
@@ -10,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services.Authentications.Security.Login
 {
-    internal class LoginAppHandler : IRequestHandler<LoginAppQuery, MyTokenAppDTO>
+    internal class LoginAppHandler : IRequestHandler<LoginAppQuery, ErrorOr<MyTokenAppDTO>>
     {
         private readonly MyStoreAppContext _context;
         private readonly IGenerateToken _generateToken;
@@ -25,18 +27,18 @@ namespace Application.Services.Authentications.Security.Login
             _passwordHasher = passwordHasher;
             _mapper = mapper;
         }
-        async Task<MyTokenAppDTO> IRequestHandler<LoginAppQuery, MyTokenAppDTO>.Handle(LoginAppQuery request, CancellationToken cancellationToken)
+        async Task<ErrorOr<MyTokenAppDTO>> IRequestHandler<LoginAppQuery, ErrorOr<MyTokenAppDTO>>.Handle(LoginAppQuery request, CancellationToken cancellationToken)
         {
             using (var transaction = _context.Database.BeginTransaction())
             {
-                try
-                {
                     var getUser = await _context.Users.FirstOrDefaultAsync(a => a.Name.Equals(request.UserName));
 
                     if (getUser == null)
-                        throw new Exception("El usuario Ingresado es Incorrecto");
-                    if (getUser.Locked > DateTime.Now || getUser.State.Equals(false))
-                        throw new Exception("El Usuario Esta Bloqueado o Deshabilitado");
+                        return AuthError.InvalidUser;
+
+                if (getUser.Locked > DateTime.Now || getUser.State.Equals(false))
+                        return AuthError.UserLocked;
+
                     if (!_passwordHasher.VerifyHashedPassword(getUser.Password, request.Password))
                     {
                         getUser.Counter += 1;
@@ -48,7 +50,7 @@ namespace Application.Services.Authentications.Security.Login
                         _context.Entry(getUser).State = EntityState.Modified;
                         await _context.SaveChangesAsync();
                         await transaction.CommitAsync();
-                        throw new Exception("Contraseña Incorrecta");
+                        return AuthError.InvalidPassword;
                     }
                     if (getUser.Counter > 0)
                     {
@@ -70,14 +72,8 @@ namespace Application.Services.Authentications.Security.Login
                         Image = userToken.Image,
                         Roles = userToken.Roles
                     };
-
-                    return new MyTokenAppDTO();
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    throw new Exception(ex.Message);
-                }
+                    
+                    return myToken; 
             }
         }
     }
